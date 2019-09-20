@@ -9,34 +9,55 @@ using System.Windows.Forms;
 using Collabco.Myday.Scim;
 using Polly;
 
-namespace Remove_duplicate_users
+namespace Remove_duplicate_objects
 {
-    public partial class RemoveDuplicateUsers : Form
+    public partial class RemoveDuplicates : Form
     {
         private readonly SynchronizationContext synchronizationContext;
 
-        public RemoveDuplicateUsers()
+        public RemoveDuplicates()
         {
             InitializeComponent();
             synchronizationContext = SynchronizationContext.Current;
         }
 
-        //Dictionary of users by externalId
-        Dictionary<string, Collabco.Myday.Scim.v2.Model.ScimUser2> users = new Dictionary<string, Collabco.Myday.Scim.v2.Model.ScimUser2>();
+        // Dictionary of object by a key
+        Dictionary<string, Collabco.Myday.Scim.Core.Model.Resource> results = new Dictionary<string, Collabco.Myday.Scim.Core.Model.Resource>();
 
-        //List of duplicate user ids
-        List<string> duplicateUserIds = new List<string>();
+        // List of duplicate object IDs
+        List<string> duplicateObjectIds = new List<string>();
 
-        private async void btn_IdentityDuplicates_Click(object sender, EventArgs e)
+        private async void btn_Identify_Click(object sender, EventArgs e)
         {
             try
             {
-                users.Clear();
-                duplicateUserIds.Clear();
+                results.Clear();
+                duplicateObjectIds.Clear();
                 var scimClient = CreateScimClient();
 
-                await Task.Run(() => FindDuplicateScimUsers(scimClient));
+                var type = txt_Type.Text;
+                var attribute = txt_Field.Text;
+                var attributes = new List<string> { "id", "externalId", "meta.created", "meta.lastModified" };
 
+                if (string.IsNullOrEmpty(attribute))
+                {
+                    attribute = "externalId";
+                }
+
+                if (attribute != "id" && attribute != "externalId")
+                {
+                    attributes.Add(attribute);
+                }
+
+                if (type == "Groups")
+                {
+                    await Task.Run(() => FindDuplicateScimObjects<Collabco.Myday.Scim.v2.Model.ScimGroup2>(scimClient, type, attributes, attribute));
+                }
+                else
+                {
+                    await Task.Run(() => FindDuplicateScimObjects<Collabco.Myday.Scim.v2.Model.ScimUser2>(scimClient, type, attributes, attribute));
+                }
+                
                 MessageBox.Show("Duplicate search completed", "Operation complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch(Exception ex)
@@ -45,15 +66,17 @@ namespace Remove_duplicate_users
             }
         }
 
-        private async Task FindDuplicateScimUsers(ScimClient scimClient)
+        private async Task FindDuplicateScimObjects<T>(ScimClient scimClient, string type, List<string> attributes, string attribute) where T: Collabco.Myday.Scim.Core.Model.Resource
         {
             var errorCount = 0;
-            var totalUserCount = 0;
-            Collabco.Myday.Scim.v2.Model.ScimListResponse2<Collabco.Myday.Scim.v2.Model.ScimUser2> usersPage = null;
+            var totalObjectCount = 0;
             var startIndex = 1;
-            while (usersPage == null || usersPage.TotalResults > totalUserCount)
+
+            Collabco.Myday.Scim.v2.Model.ScimListResponse2<T> resultsPage = null;
+
+            while (resultsPage == null || resultsPage.TotalResults > totalObjectCount)
             {
-                usersPage = await Policy
+                resultsPage = await Policy
                  .Handle<Exception>(e => !(e is ArgumentNullException || e is ArgumentException))
                  .WaitAndRetryAsync(
                    DecorrelatedJitter(5, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(30)),
@@ -66,42 +89,50 @@ namespace Remove_duplicate_users
                  )
                  .ExecuteAsync(() =>
                  {
-                     return scimClient.Search<Collabco.Myday.Scim.v2.Model.ScimUser2>(
+                     return scimClient.Search<T>(
                          new Collabco.Myday.Scim.Query.ScimQueryOptions
                          {
-                             Attributes = new List<string> { "id", "externalId", "meta.created", "meta.lastModified" },
+                             Attributes = attributes,
                              StartIndex = startIndex,
-                             //SortBy = "meta.created",
-                            // SortOrder = Collabco.Myday.Scim.Core.Model.SortOrder.Ascending,
+                             // SortBy = "meta.created",
+                             // SortOrder = Collabco.Myday.Scim.Core.Model.SortOrder.Ascending,
                              Count = 100
                          }
                      );
                  });
 
-                totalUserCount += usersPage.Resources.Count();                
-                startIndex += usersPage.ItemsPerPage;
+                totalObjectCount += resultsPage.Resources.Count();                
+                startIndex += resultsPage.ItemsPerPage;
 
-                foreach(var user in usersPage.Resources.Where(g => !string.IsNullOrEmpty(g.ExternalId)))
+                foreach (var currentObject in resultsPage.Resources)
                 {
-                    if (users.TryGetValue(user.ExternalId, out Collabco.Myday.Scim.v2.Model.ScimUser2 existingUser))
+                    System.Reflection.PropertyInfo prop = typeof(T).GetProperty(attribute);
+                    var propertyValue = (String)prop.GetValue(currentObject);
+
+                    if (string.IsNullOrEmpty(propertyValue))
                     {
-                        if (SuperceedsExistingUser(existingUser, user))
+                        continue;
+                    }
+
+                    if (results.TryGetValue(propertyValue, out Collabco.Myday.Scim.Core.Model.Resource existingObject))
+                    {
+                        if (SuperceedsExistingObject(existingObject, currentObject))
                         {
-                            users[user.ExternalId] = user;
-                            duplicateUserIds.Add(existingUser.Id);
+                            results[propertyValue] = currentObject;
+                            duplicateObjectIds.Add(existingObject.Id);
                         }
                         else
                         {
-                            duplicateUserIds.Add(user.Id);
+                            duplicateObjectIds.Add(currentObject.Id);
                         }
                     }
                     else
                     {
-                        users[user.ExternalId] = user;
+                        results[propertyValue] = currentObject;
                     }
                 }
 
-                UpdateDuplicateCounts(totalUserCount);
+                UpdateDuplicateCounts(totalObjectCount);
             }
         }
 
@@ -110,9 +141,10 @@ namespace Remove_duplicate_users
         {
             synchronizationContext.Post(new SendOrPostCallback(o =>
             {
-                lbl_TotalUsers.Text = o.ToString();
-                lbl_NoDuplicates.Text = duplicateUserIds.Count.ToString();
-                lbl_NoUniqueUsers.Text = users.Count.ToString();
+                lbl_TotalNo.Text = o.ToString();
+                lbl_DuplicatesNo.Text = duplicateObjectIds.Count.ToString();
+                lbl_UniqueNo.Text = results.Count.ToString();
+                txt_Found.Text = String.Join(Environment.NewLine, duplicateObjectIds);
             }), totalGroupCount);
         }
 
@@ -126,7 +158,7 @@ namespace Remove_duplicate_users
                 {
                     var deleteCount = 0;
 
-                    foreach (var groupId in duplicateUserIds)
+                    foreach (var objectId in duplicateObjectIds)
                     {
                         await Policy
                          .Handle<Exception>(ex => !(ex is ArgumentNullException || ex is ArgumentException))
@@ -139,7 +171,7 @@ namespace Remove_duplicate_users
                          )
                          .ExecuteAsync(() =>
                          {
-                             return scimClient.Delete<Collabco.Myday.Scim.v2.Model.ScimUser2>(groupId);
+                             return scimClient.Delete<Collabco.Myday.Scim.Core.Model.Resource>(objectId);
                          });
 
                         deleteCount++;
@@ -159,7 +191,7 @@ namespace Remove_duplicate_users
         {
             synchronizationContext.Post(new SendOrPostCallback(o =>
             {
-                lbl_NoError.Text = o.ToString();
+                lbl_ErrorsNo.Text = o.ToString();
             }), deleteCount);
         }
 
@@ -167,7 +199,7 @@ namespace Remove_duplicate_users
         {
             synchronizationContext.Post(new SendOrPostCallback(o =>
             {
-                lbl_NoDeleted.Text = o.ToString();
+                lbl_DeletedNo.Text = o.ToString();
             }), deleteCount);
         }
 
@@ -208,7 +240,7 @@ namespace Remove_duplicate_users
             }
         }
 
-        private bool SuperceedsExistingUser(Collabco.Myday.Scim.v2.Model.ScimUser2 existingtUser, Collabco.Myday.Scim.v2.Model.ScimUser2 duplicateUser)
+        private bool SuperceedsExistingObject(Collabco.Myday.Scim.Core.Model.Resource existing, Collabco.Myday.Scim.Core.Model.Resource duplicate)
         {
             ////Superceed if duplicate user is active and existing user is not
             //bool superceed = !(existingtUser.Active ?? false) && (duplicateUser.Active ?? false);
@@ -227,7 +259,7 @@ namespace Remove_duplicate_users
             //    superceed = duplicateUserIdProviders != null && duplicateUserIdProviders.Count > (existingUserIdProviders?.Count ?? 0);
             //}
 
-            return duplicateUser.Meta.Created < existingtUser.Meta.Created;
+            return duplicate.Meta.Created < existing.Meta.Created;
         }
     }
 }

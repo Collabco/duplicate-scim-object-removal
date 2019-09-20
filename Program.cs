@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace Remove_duplicate_users
+namespace Remove_duplicate_objects
 {
     static class Program
     {
@@ -16,7 +16,7 @@ namespace Remove_duplicate_users
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new RemoveDuplicateUsers());
+            Application.Run(new RemoveDuplicates());
         }
     }
 }

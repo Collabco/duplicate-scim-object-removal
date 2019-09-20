@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Remove_duplicate_users.Properties {
+namespace Remove_duplicate_objects.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
