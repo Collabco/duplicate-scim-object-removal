@@ -72,6 +72,9 @@ namespace Remove_duplicate_objects
             var totalObjectCount = 0;
             var startIndex = 1;
 
+            var attributeUpper = attribute.First().ToString().ToUpper() + attribute.Substring(1);
+            System.Reflection.PropertyInfo prop = typeof(T).GetProperty(attributeUpper);
+
             Collabco.Myday.Scim.v2.Model.ScimListResponse2<T> resultsPage = null;
 
             while (resultsPage == null || resultsPage.TotalResults > totalObjectCount)
@@ -106,7 +109,6 @@ namespace Remove_duplicate_objects
 
                 foreach (var currentObject in resultsPage.Resources)
                 {
-                    System.Reflection.PropertyInfo prop = typeof(T).GetProperty(attribute);
                     var propertyValue = (String)prop.GetValue(currentObject);
 
                     if (string.IsNullOrEmpty(propertyValue))
