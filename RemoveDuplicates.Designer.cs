@@ -181,7 +181,6 @@
             this.txt_TenantId.Name = "txt_TenantId";
             this.txt_TenantId.Size = new System.Drawing.Size(448, 20);
             this.txt_TenantId.TabIndex = 0;
-            this.txt_TenantId.Text = "608430e1-a4f0-4888-9a6e-2e28c88a74cd";
             // 
             // txt_Token
             // 
@@ -202,30 +201,31 @@
             // 
             // lbl_DuplicatesNo
             // 
-            this.lbl_DuplicatesNo.AutoSize = true;
-            this.lbl_DuplicatesNo.Location = new System.Drawing.Point(525, 195);
+            this.lbl_DuplicatesNo.Location = new System.Drawing.Point(491, 195);
             this.lbl_DuplicatesNo.Name = "lbl_DuplicatesNo";
-            this.lbl_DuplicatesNo.Size = new System.Drawing.Size(13, 13);
+            this.lbl_DuplicatesNo.Size = new System.Drawing.Size(47, 13);
             this.lbl_DuplicatesNo.TabIndex = 6;
             this.lbl_DuplicatesNo.Text = "0";
+            this.lbl_DuplicatesNo.TextAlign = System.Drawing.ContentAlignment.TopRight;
             // 
             // lbl_TotalNo
             // 
-            this.lbl_TotalNo.AutoSize = true;
-            this.lbl_TotalNo.Location = new System.Drawing.Point(525, 169);
+            this.lbl_TotalNo.Location = new System.Drawing.Point(488, 169);
             this.lbl_TotalNo.Name = "lbl_TotalNo";
-            this.lbl_TotalNo.Size = new System.Drawing.Size(13, 13);
+            this.lbl_TotalNo.RightToLeft = System.Windows.Forms.RightToLeft.No;
+            this.lbl_TotalNo.Size = new System.Drawing.Size(50, 13);
             this.lbl_TotalNo.TabIndex = 8;
             this.lbl_TotalNo.Text = "0";
+            this.lbl_TotalNo.TextAlign = System.Drawing.ContentAlignment.TopRight;
             // 
             // lbl_UniqueNo
             // 
-            this.lbl_UniqueNo.AutoSize = true;
-            this.lbl_UniqueNo.Location = new System.Drawing.Point(525, 222);
+            this.lbl_UniqueNo.Location = new System.Drawing.Point(491, 222);
             this.lbl_UniqueNo.Name = "lbl_UniqueNo";
-            this.lbl_UniqueNo.Size = new System.Drawing.Size(13, 13);
+            this.lbl_UniqueNo.Size = new System.Drawing.Size(47, 18);
             this.lbl_UniqueNo.TabIndex = 10;
             this.lbl_UniqueNo.Text = "0";
+            this.lbl_UniqueNo.TextAlign = System.Drawing.ContentAlignment.TopRight;
             // 
             // btn_Delete
             // 
@@ -239,21 +239,21 @@
             // 
             // lbl_DeletedNo
             // 
-            this.lbl_DeletedNo.AutoSize = true;
-            this.lbl_DeletedNo.Location = new System.Drawing.Point(525, 248);
+            this.lbl_DeletedNo.Location = new System.Drawing.Point(491, 248);
             this.lbl_DeletedNo.Name = "lbl_DeletedNo";
-            this.lbl_DeletedNo.Size = new System.Drawing.Size(13, 13);
+            this.lbl_DeletedNo.Size = new System.Drawing.Size(47, 13);
             this.lbl_DeletedNo.TabIndex = 13;
             this.lbl_DeletedNo.Text = "0";
+            this.lbl_DeletedNo.TextAlign = System.Drawing.ContentAlignment.TopRight;
             // 
             // lbl_ErrorsNo
             // 
-            this.lbl_ErrorsNo.AutoSize = true;
-            this.lbl_ErrorsNo.Location = new System.Drawing.Point(525, 273);
+            this.lbl_ErrorsNo.Location = new System.Drawing.Point(491, 273);
             this.lbl_ErrorsNo.Name = "lbl_ErrorsNo";
-            this.lbl_ErrorsNo.Size = new System.Drawing.Size(13, 13);
+            this.lbl_ErrorsNo.Size = new System.Drawing.Size(47, 13);
             this.lbl_ErrorsNo.TabIndex = 15;
             this.lbl_ErrorsNo.Text = "0";
+            this.lbl_ErrorsNo.TextAlign = System.Drawing.ContentAlignment.TopRight;
             // 
             // txt_ScimUrl
             // 
@@ -326,7 +326,7 @@
             this.Controls.Add(lbl_TenantId);
             this.Controls.Add(this.txt_TenantId);
             this.Name = "RemoveDuplicates";
-            this.Text = "Remove duplicate SCIM users by userName";
+            this.Text = "Remove duplicate SCIM objects";
             this.ResumeLayout(false);
             this.PerformLayout();
 
