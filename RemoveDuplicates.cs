@@ -116,11 +116,11 @@ namespace Remove_duplicate_objects
                         continue;
                     }
 
-                    if (results.TryGetValue(propertyValue, out Collabco.Myday.Scim.Core.Model.Resource existingObject))
+                    if (results.TryGetValue(propertyValue.ToLowerInvariant(), out Collabco.Myday.Scim.Core.Model.Resource existingObject))
                     {
                         if (SuperceedsExistingObject(existingObject, currentObject))
                         {
-                            results[propertyValue] = currentObject;
+                            results[propertyValue.ToLowerInvariant()] = currentObject;
                             duplicateObjectIds.Add(existingObject.Id);
                         }
                         else
@@ -130,7 +130,7 @@ namespace Remove_duplicate_objects
                     }
                     else
                     {
-                        results[propertyValue] = currentObject;
+                        results[propertyValue.ToLowerInvariant()] = currentObject;
                     }
                 }
 
