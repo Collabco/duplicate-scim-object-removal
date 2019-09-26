@@ -27,6 +27,8 @@ namespace Remove_duplicate_objects
         // List of duplicate object IDs
         List<string> duplicateObjectIds = new List<string>();
 
+        private string ResourceType = null;
+
         private async void btn_Identify_Click(object sender, EventArgs e)
         {
             try
@@ -35,7 +37,8 @@ namespace Remove_duplicate_objects
                 duplicateObjectIds.Clear();
                 var scimClient = CreateScimClient();
 
-                var type = txt_Type.Text;
+                this.ResourceType = txt_Type.Text;
+
                 var attribute = txt_Field.Text;
                 var attributes = new List<string> { "id", "externalId", "meta.created", "meta.lastModified" };
 
@@ -49,14 +52,17 @@ namespace Remove_duplicate_objects
                     attributes.Add(attribute);
                 }
 
-                if (type == "Groups")
+                await Task.Run(() =>
                 {
-                    await Task.Run(() => FindDuplicateScimObjects<Collabco.Myday.Scim.v2.Model.ScimGroup2>(scimClient, type, attributes, attribute));
-                }
-                else
-                {
-                    await Task.Run(() => FindDuplicateScimObjects<Collabco.Myday.Scim.v2.Model.ScimUser2>(scimClient, type, attributes, attribute));
-                }
+                    if (this.ResourceType == "Groups")
+                    {
+                        return FindDuplicateScimObjects<Collabco.Myday.Scim.v2.Model.ScimGroup2>(scimClient, attributes, attribute);
+                    }
+                    else
+                    {
+                        return FindDuplicateScimObjects<Collabco.Myday.Scim.v2.Model.ScimUser2>(scimClient, attributes, attribute);
+                    }
+                });
                 
                 MessageBox.Show("Duplicate search completed", "Operation complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
@@ -66,7 +72,7 @@ namespace Remove_duplicate_objects
             }
         }
 
-        private async Task FindDuplicateScimObjects<T>(ScimClient scimClient, string type, List<string> attributes, string attribute) where T: Collabco.Myday.Scim.Core.Model.Resource
+        private async Task FindDuplicateScimObjects<T>(ScimClient scimClient, List<string> attributes, string attribute) where T: Collabco.Myday.Scim.Core.Model.Resource
         {
             var errorCount = 0;
             var totalObjectCount = 0;
@@ -113,6 +119,7 @@ namespace Remove_duplicate_objects
 
                     if (string.IsNullOrEmpty(propertyValue))
                     {
+                        Debug.WriteLine($"Property does not exist, most likely a local user/group: " + currentObject.Id);
                         continue;
                     }
 
@@ -138,7 +145,6 @@ namespace Remove_duplicate_objects
             }
         }
 
-
         private void UpdateDuplicateCounts(int totalGroupCount)
         {
             synchronizationContext.Post(new SendOrPostCallback(o =>
@@ -156,10 +162,15 @@ namespace Remove_duplicate_objects
             {
                 var scimClient = CreateScimClient();
 
+                if (string.IsNullOrEmpty(this.ResourceType))
+                {
+                    throw new Exception("Resource type is not selected");
+                }
+
                 await Task.Run(async () =>
                 {
-                    var deleteCount = 0;
-
+                    var deleteCount = 0; 
+                    
                     foreach (var objectId in duplicateObjectIds)
                     {
                         await Policy
@@ -173,7 +184,14 @@ namespace Remove_duplicate_objects
                          )
                          .ExecuteAsync(() =>
                          {
-                             return scimClient.Delete<Collabco.Myday.Scim.Core.Model.Resource>(objectId);
+                             if (this.ResourceType == "Groups")
+                             {
+                                 return scimClient.Delete<Collabco.Myday.Scim.v2.Model.ScimGroup2>(objectId);
+                             }
+                             else
+                             {
+                                 return scimClient.Delete<Collabco.Myday.Scim.v2.Model.ScimUser2>(objectId);
+                             }
                          });
 
                         deleteCount++;
